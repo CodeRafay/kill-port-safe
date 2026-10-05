@@ -178,8 +178,13 @@ async function describe (pids) {
   if (process.platform === 'linux') {
     for (const pid of pids) {
       const p = info.get(pid)
-      try { p.name = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim() } catch {}
-      try { p.command = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0').filter(Boolean).join(' ') || null } catch {}
+      // argv[0] first: /proc/<pid>/comm holds the thread name (Node 24 reports "MainThread").
+      try {
+        const argv = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0').filter(Boolean)
+        p.command = argv.join(' ') || null
+        if (argv[0]) p.name = path.basename(argv[0])
+      } catch {}
+      if (!p.name) try { p.name = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim() } catch {}
       try { p.cwd = fs.readlinkSync(`/proc/${pid}/cwd`) } catch {}
     }
   } else if (isWin) {
@@ -191,13 +196,20 @@ async function describe (pids) {
       if (cols && toPid(cols[1] && cols[1].slice(1, -1)) === pid) info.get(pid).name = cols[0].slice(1, -1)
     }))
   } else {
-    const res = await run('ps', ['-o', 'pid=', '-o', 'comm=', '-o', 'args=', '-p', pids.join(',')])
-    for (const line of res.stdout.split('\n')) {
-      const m = line.trim().match(/^(\d+)\s+(\S+)\s+(.*)$/)
-      if (!m || !info.has(Number(m[1]))) continue
-      const p = info.get(Number(m[1]))
-      p.name = path.basename(m[2])
-      p.command = m[3]
+    // -ww: macOS truncates columns otherwise. Separate calls because comm may contain spaces.
+    const read = async (field) => {
+      const res = await run('ps', ['-ww', '-o', 'pid=', '-o', `${field}=`, '-p', pids.join(',')])
+      for (const line of res.stdout.split('\n')) {
+        const m = line.match(/^\s*(\d+) (.*)$/)
+        if (m && info.has(Number(m[1]))) info.get(Number(m[1]))[field] = m[2].trim()
+      }
+    }
+    await Promise.all([read('comm'), read('args')])
+    for (const p of info.values()) {
+      p.name = p.comm ? path.basename(p.comm) : null
+      p.command = p.args || null
+      delete p.comm
+      delete p.args
     }
   }
   return info
