@@ -1,0 +1,49 @@
+name: Benchmark
+
+# Manual run: times kill-port-safe against kill-port 2.0.1 on each OS (medians go to the run summary)
+# and renders demo.gif from demo.tape (download it from the run's artifacts).
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-26.04, macos-26, windows-2025]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm i --no-save kill-port@2.0.1
+      - run: |
+          {
+            echo '```'
+            node bench.js -- node cli.js {port}
+            node bench.js -- node node_modules/kill-port/cli.js --port {port}
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  demo:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm link
+      - uses: charmbracelet/vhs-action@v2
+        with:
+          path: demo.tape
+      - uses: actions/upload-artifact@v7
+        with:
+          name: demo
+          path: demo.gif
