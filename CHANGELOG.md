@@ -2,6 +2,13 @@
 
 All notable changes are listed here. This project follows [semver](https://semver.org): breaking changes only in major versions.
 
+## 1.0.0
+
+First stable release. No API or CLI changes since 0.1.0: the kill-port-compatible API is now covered by semver.
+
+- Process names are correct on macOS and on Linux with Node 24.
+- `bench.js` measures how long any port-killing command takes to free a port.
+
 ## 0.1.0
 
 First release.

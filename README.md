@@ -26,7 +26,7 @@ npx kill-port-safe 3000
 
 `kill-port-safe` keeps kill-port's CLI and API, so switching is a one-line change. It also includes fixes for issues reported on kill-port over the years:
 
-| | kill-port 2.0.1 | kill-port-safe |
+| | kill-port 2.0.1 (latest release) | kill-port-safe |
 |---|---|---|
 | Exact port matching ([#67](https://github.com/tiaanduplessis/kill-port/issues/67)) | substring match | exact |
 | Works without `lsof` ([#9](https://github.com/tiaanduplessis/kill-port/issues/9), [#45](https://github.com/tiaanduplessis/kill-port/issues/45)) | needs `lsof` | reads `/proc` |
@@ -41,8 +41,27 @@ npx kill-port-safe 3000
 | TypeScript types ([#79](https://github.com/tiaanduplessis/kill-port/issues/79)) | via `@types/kill-port` | bundled |
 | Module formats | CommonJS | CommonJS + ESM |
 | Runtime dependencies | 2 | 0 |
+| Runs commands through a shell | yes | never |
 
-Thanks to the kill-port maintainer and contributors. This project builds on their work (see [Credits](#credits)).
+kill-port is actively maintained again: its master branch has since added exact port matching, `--quiet`, signal choice and bundled types, not yet released as of October 2026. It still needs `lsof`, fails when the port is already free and has no `who` or wait-until-free.
+
+kill-port-safe is not affiliated with kill-port. Thanks to its maintainer and contributors; this project builds on their work (see [Credits](#credits)).
+
+## Compared to kill-port-process and fkill
+
+| | kill-port-process 5.0.0 | fkill 10 | kill-port-safe |
+|---|---|---|---|
+| Finds by port | yes | yes (`:3000`) | yes |
+| Linux without `lsof` | needs `ss` | needs `ss` | reads `/proc`, needs nothing |
+| `--graceful` | SIGTERM only, nothing on Windows | `forceAfterTimeout` | SIGTERM, then SIGKILL if still running |
+| Port already free | error | error | exit 0 |
+| Shows what it killed / `who` | — | — | yes |
+| Waits until the port is free | — | — | yes |
+| kill-port API compatible | no (`killPortProcess`) | no | yes |
+| Node.js | ≥ 22 | ≥ 20, ESM only | ≥ 18, CommonJS + ESM |
+| Runtime dependencies | 0 | 5 | 0 |
+
+fkill is a general process killer (by PID or name, with a fuzzy-search CLI); use it if that's what you need.
 
 ## Switching from kill-port
 
@@ -144,6 +163,9 @@ The same way, with any port: `npx kill-port-safe 5173`. Free several at once wit
 
 ### Is it safe to use in CI and Docker?
 Yes. It has no dependencies, works without `lsof`, never runs commands through a shell, refuses to kill itself, its parent process or the Windows System process, and exits 0 when the port is already free, so a `predev` or `pretest` step won't fail on a clean machine.
+
+### `npm install -g kill-port-safe` fails with EEXIST. Why?
+kill-port-safe also installs a `kill-port` command so existing scripts keep working. If kill-port (or another package with a `kill-port` command) is already installed globally, npm refuses to overwrite it. Run `npm uninstall -g kill-port` first, or use the `kill-port-safe` command, which never clashes. In a project, don't install both packages side by side: npm and pnpm may pick different winners for the shared command.
 
 ### Why does zero dependencies matter?
 In 2025, the [Shai-Hulud worm](https://www.blackduck.com/blog/npm-malware-attack-shai-hulud-threat.html) published infected versions of hundreds of npm packages, including kill-port 2.0.2 and 2.0.3, which have since been removed. Every dependency is one more package an attacker can compromise. kill-port-safe has none, has no install scripts, and every release is built and published by GitHub Actions with npm provenance, so you can verify exactly which source code it came from.

@@ -1,6 +1,6 @@
 {
   "name": "kill-port-safe",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Kill the process on a port (3000, 8080, any). Zero-dependency drop-in replacement for kill-port: fast, exact port matching, shows what it killed, works on Windows, macOS, Linux and Docker.",
   "license": "MIT",
   "main": "index.js",
