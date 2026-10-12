@@ -23,3 +23,7 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm test
       - run: npm publish --provenance --access public
+        # Only for the very first publish: trusted publishing can't be set up until the package exists.
+        # Afterwards, configure trusted publishing, delete the NPM_TOKEN secret and remove these two lines.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
