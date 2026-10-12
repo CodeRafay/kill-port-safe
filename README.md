@@ -7,9 +7,7 @@ Fixes `EADDRINUSE: address already in use` in one command. Zero dependencies, an
 npx kill-port-safe 3000
 ```
 
-```
-✓ 3000  killed node (PID 4812)
-```
+![kill-port-safe showing what is on port 3000, killing it, then reporting the port already free](https://raw.githubusercontent.com/CodeRafay/kill-port-safe/main/demo.gif)
 
 ## Features
 
